@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trình chỉnh sửa JSON Câu hỏi (v4 - Cải tiến ComboBox)</title>
+    <meta charset="UTF-R" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trình chỉnh sửa JSON Câu hỏi (v4 - Đã sửa lỗi)</title>
     <style>
         :root {
             --color-primary: #0056b3;
@@ -186,6 +186,7 @@
             margin-bottom: 20px;
             background: #fff;
             box-shadow: var(--shadow-light);
+            /* overflow: hidden;  <-- ĐÃ XÓA DÒNG NÀY ĐỂ SỬA LỖI DROPDOWN */
         }
         
         .question-header {
@@ -492,7 +493,7 @@
             
             <div class="toolbar-group">
                 <label for="uploadInput" class="btn btn-primary">Tải lên tệp JSON</label>
-                <input type="file" id="uploadInput" accept="application/json">
+                <input type="file" id="uploadInput" accept="application/json" />
                 <span id="file-name">Chưa chọn tệp...</span>
             </div>
             
@@ -799,32 +800,48 @@
                     checkbox.checked = Array.isArray(currentAnswers) && currentAnswers.includes(optionValue);
                     checkbox.value = optionValue;
                     
+                    // === BẢN VÁ JAVASCRIPT 1 ===
                     checkbox.onchange = (e) => {
-                        let newAnswers = Array.isArray(question.answers[zoneText]) ? [...question.answers[zoneText]] : [];
+                        // LỖI ĐƯỢC SỬA: Luôn đọc dữ liệu mới nhất từ flatQuestionRefs
+                        const currentQuestion = flatQuestionRefs[qIndex];
+                        const sourceAnswers = currentQuestion.answers[zoneText];
+
+                        let newAnswers = Array.isArray(sourceAnswers) ? [...sourceAnswers] : [];
+                        
                         if (e.target.checked) {
                             if (!newAnswers.includes(optionValue)) newAnswers.push(optionValue);
                         } else {
                             newAnswers = newAnswers.filter(val => val !== optionValue);
                         }
+                        
                         newAnswers.sort((a, b) => a - b);
                         updateDDAnswer(qIndex, zoneText, newAnswers);
-                        updateTags(newAnswers);
+                        updateTags(newAnswers); // Hàm này bây giờ sẽ cập nhật thẻ tag ngay lập tức
                         // Không đóng menu khi chọn/bỏ chọn
                     };
+                    // === KẾT THÚC BẢN VÁ 1 ===
+                    
                     item.appendChild(checkbox);
                 } 
                 // Nếu là Chọn Một -> Radio-like behavior
                 else {
+                    
+                    // === BẢN VÁ JAVASCRIPT 2 ===
                     item.onclick = (e) => {
-                        // Cập nhật đáp án
-                        const newAnswer = (currentAnswers === optionValue) ? null : optionValue;
+                        // LỖI ĐƯỢC SỬA: Đọc dữ liệu mới nhất từ flatQuestionRefs
+                        const currentQuestion = flatQuestionRefs[qIndex];
+                        const sourceAnswer = currentQuestion.answers[zoneText];
+
+                        const newAnswer = (sourceAnswer === optionValue) ? null : optionValue;
                         updateDDAnswer(qIndex, zoneText, newAnswer);
-                        updateTags(newAnswer);
+                        
+                        // Không cần gọi updateTags() vì rerenderQuestionCard() sẽ làm điều đó
                         
                         // Đóng menu và rerender để cập nhật các item khác
                         dropdownMenu.classList.remove('visible');
-                        rerenderQuestionCard(qIndex); // Cần rerender để reset trạng thái UI
+                        rerenderQuestionCard(qIndex); // Rerender sẽ cập nhật mọi thứ
                     };
+                    // === KẾT THÚC BẢN VÁ 2 ===
                 }
                 
                 const textSpan = document.createElement('span');
